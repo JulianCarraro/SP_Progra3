@@ -6,6 +6,7 @@ class Deposito{
     public $idDeposito;
     public $nroDeCuenta;
     public $urlImagen;
+    public $moneda;
     public $monto;
     public $fecha;
 
@@ -16,11 +17,12 @@ class Deposito{
     public function CrearDeposito()
     {
         $objAcessoDatos = AccesoDatos::ObtenerInstancia();
-        $consulta = $objAcessoDatos->PrepararConsulta("INSERT INTO depositos (nroDeCuenta, urlImagen, monto, fecha) 
-        VALUES (:nroDeCuenta, :urlImagen, :monto, :fecha)");
+        $consulta = $objAcessoDatos->PrepararConsulta("INSERT INTO depositos (nroDeCuenta, urlImagen, moneda, monto, fecha) 
+        VALUES (:nroDeCuenta, :urlImagen, :moneda, :monto, :fecha)");
 
         $consulta->bindValue(':nroDeCuenta', $this->nroDeCuenta, PDO::PARAM_INT);
-        $consulta->bindValue(':urlImagen', $this->urlImagen, PDO::PARAM_INT);
+        $consulta->bindValue(':urlImagen', $this->urlImagen, PDO::PARAM_STR);
+        $consulta->bindValue(':moneda', $this->moneda, PDO::PARAM_STR);
         $consulta->bindValue(':monto', $this->monto, PDO::PARAM_INT);
         $consulta->bindValue(':fecha', $this->fecha, PDO::PARAM_STR);
         $consulta->execute();
@@ -29,8 +31,8 @@ class Deposito{
     public static function ObtenerTodos()
     {
         $objAcessoDatos = AccesoDatos::ObtenerInstancia();
-        $consulta = $objAcessoDatos->PrepararConsulta("SELECT c.nombreYApellido, c.tipoDeDocumento, c.nroDocumento, c.mail, c.tipoDeCuenta, c.moneda, c.saldoInicial, c.nroDeCuenta, 
-        c.estado, d.idDeposito, d.monto, d.fecha FROM depositos as d LEFT JOIN cuentas as c ON c.nroDeCuenta = d.nroDeCuenta");
+        $consulta = $objAcessoDatos->PrepararConsulta("SELECT c.nombreYApellido, c.tipoDeDocumento, c.nroDocumento, c.mail, c.tipoDeCuenta, c.saldoInicial, c.nroDeCuenta, 
+        c.estado, d.idDeposito, d.moneda, d.monto, d.fecha FROM depositos as d LEFT JOIN cuentas as c ON c.nroDeCuenta = d.nroDeCuenta WHERE c.estado = 'Activo'");
         $consulta->execute();
 
         return $consulta->fetchAll(PDO::FETCH_ASSOC);
@@ -39,8 +41,8 @@ class Deposito{
     public static function ObtenerDepositosDeUsuario($nroDeCuenta)
     {
         $objAcessoDatos = AccesoDatos::ObtenerInstancia();
-        $consulta = $objAcessoDatos->PrepararConsulta("SELECT c.nombreYApellido, c.tipoDeDocumento, c.nroDocumento, c.mail, c.tipoDeCuenta, c.moneda, c.saldoInicial, c.nroDeCuenta, 
-        c.estado, d.idDeposito, d.monto, d.fecha FROM depositos as d LEFT JOIN cuentas as c ON c.nroDeCuenta = d.nroDeCuenta WHERE d.nroDeCuenta = :nroDeCuenta");
+        $consulta = $objAcessoDatos->PrepararConsulta("SELECT c.nombreYApellido, c.tipoDeDocumento, c.nroDocumento, c.mail, c.tipoDeCuenta, c.saldoInicial, c.nroDeCuenta, 
+        c.estado, d.idDeposito, d.moneda, d.monto, d.fecha FROM depositos as d LEFT JOIN cuentas as c ON c.nroDeCuenta = d.nroDeCuenta WHERE d.nroDeCuenta = :nroDeCuenta AND c.estado = 'Activo'");
 
         $consulta->bindValue(':nroDeCuenta', $nroDeCuenta, PDO::PARAM_INT);
 
@@ -66,9 +68,9 @@ class Deposito{
 
         foreach($depositos as $value)
         {
-            if($value->tipoDeCuenta == $tipoDeCuenta && $value->moneda == $moneda && $value->fecha == $fecha)
+            if($value['tipoDeCuenta'] == $tipoDeCuenta .  $moneda && $value['moneda'] == $moneda && $value['fecha'] == $fecha)
             {
-                $montoTotal += $value->monto;
+                $montoTotal += $value['monto'];
             }
         }
 
@@ -82,7 +84,7 @@ class Deposito{
 
         foreach($depositos as $value)
         {
-            if($value->nroDeCuenta == $nroDeCuenta)
+            if($value['nroDeCuenta'] == $nroDeCuenta)
             {
                 $depositosDeCuenta[] = $value;
             }
@@ -99,7 +101,7 @@ class Deposito{
 
         foreach($depositos as $value)
         {
-            if($value->fecha >= $fechaInicio && $value->fecha <= $fechaFinal)
+            if($value['fecha'] >= $fechaInicio && $value['fecha'] <= $fechaFinal)
             {
                 $depositosEntreFechas[] = $value;
                 $hayDeposito = true;
@@ -116,7 +118,7 @@ class Deposito{
 
     static function CompararNombre($depositoUno, $depositoDos)
     {
-        return strcmp($depositoUno->_nombreYApellido, $depositoDos->_nombreYApellido);
+        return strcmp($depositoUno['nombreYApellido'], $depositoDos['nombreYApellido']);
     }
     
     static function ObtenerDepositosPorTipoDeCuenta($tipoDeCuenta)
@@ -126,9 +128,17 @@ class Deposito{
 
         foreach($depositos as $value)
         {
-            if($value->tipoDeCuenta == $tipoDeCuenta)
+            if($value['tipoDeCuenta'] == $tipoDeCuenta)
             {
                 $depositosPorTipoDeCuenta[] = $value;
+            }
+            else
+            {
+                $auxTipoDeCuenta = substr($value['tipoDeCuenta'], 0, 2);
+                if($auxTipoDeCuenta == $tipoDeCuenta)
+                {
+                    $depositosPorTipoDeCuenta[] = $value;
+                }
             }
         }
 
@@ -141,7 +151,7 @@ class Deposito{
 
         foreach($depositos as $value)
         {
-            if($value->moneda == $moneda)
+            if($value['moneda'] == $moneda)
             {
                 $depositosPorMoneda[] = $value;
             }

@@ -21,8 +21,8 @@ class Cuenta
     {
         $objAcessoDatos = AccesoDatos::ObtenerInstancia();
         $consulta = $objAcessoDatos->PrepararConsulta("INSERT INTO cuentas (nombreYApellido, tipoDeDocumento, nroDocumento, mail, tipoDeCuenta, 
-        moneda, saldoInicial, nroDeCuenta, urlImagen, estado) 
-        VALUES (:nombreYApellido, :tipoDeDocumento, :nroDocumento, :mail, :tipoDeCuenta, :moneda, :saldoInicial, :nroDeCuenta, :urlImagen, :estado)");
+        moneda, saldoInicial, urlImagen, estado) 
+        VALUES (:nombreYApellido, :tipoDeDocumento, :nroDocumento, :mail, :tipoDeCuenta, :moneda, :saldoInicial, :urlImagen, :estado)");
 
         $consulta->bindValue(':nombreYApellido', $this->nombreYApellido, PDO::PARAM_STR);
         $consulta->bindValue(':tipoDeDocumento', $this->tipoDeDocumento, PDO::PARAM_STR);
@@ -31,36 +31,36 @@ class Cuenta
         $consulta->bindValue(':tipoDeCuenta', $this->tipoDeCuenta, PDO::PARAM_STR);
         $consulta->bindValue(':moneda', $this->moneda, PDO::PARAM_STR);
         $consulta->bindValue(':saldoInicial', $this->saldoInicial, PDO::PARAM_INT);
-        $consulta->bindValue(':urlImagen', $this->urlImagen, PDO::PARAM_INT);
-        $consulta->bindValue(':estado', $this->estado, PDO::PARAM_INT);
+        $consulta->bindValue(':urlImagen', $this->urlImagen, PDO::PARAM_STR);
+        $consulta->bindValue(':estado', $this->estado, PDO::PARAM_STR);
         $consulta->execute();
     }
     
     public static function ObtenerTodos()
     {
         $objAcessoDatos = AccesoDatos::ObtenerInstancia();
-        $consulta = $objAcessoDatos->PrepararConsulta("SELECT * FROM cuentas");
+        $consulta = $objAcessoDatos->PrepararConsulta("SELECT * FROM cuentas WHERE estado = 'Activo'");
         $consulta->execute();
 
-        return $consulta->fetchAll(PDO::FETCH_CLASS, 'cuenta');
+        return $consulta->fetchAll(PDO::FETCH_CLASS, 'Cuenta');
     }
 
     public static function ObtenerCuenta($nroDeCuenta)
     {
         $objAcessoDatos = AccesoDatos::ObtenerInstancia();
-        $consulta = $objAcessoDatos->PrepararConsulta("SELECT * FROM cuentas WHERE nroDeCuenta = :nroDeCuenta");
+        $consulta = $objAcessoDatos->PrepararConsulta("SELECT * FROM cuentas WHERE nroDeCuenta = :nroDeCuenta AND estado = 'Activo'");
 
         $consulta->bindValue(':nroDeCuenta', $nroDeCuenta, PDO::PARAM_INT);
         
         $consulta->execute();
 
-        return $consulta->fetchAll(PDO::FETCH_CLASS, 'cuenta');
+        return $consulta->fetchObject('Cuenta');
     }
 
     public static function ModificarCuenta($nombreYApellido, $tipoDeDocumento, $nroDocumento, $mail, $tipoDeCuenta, $moneda, $nroDeCuenta)
     {
         $objAcessoDatos = AccesoDatos::ObtenerInstancia();
-        $consulta = $objAcessoDatos->PrepararConsulta("UPDATE cuenta set nombreYApellido = :nombreYApellido, tipoDeDocumento = :tipoDeDocumento, nroDocumento = :nroDocumento, 
+        $consulta = $objAcessoDatos->PrepararConsulta("UPDATE cuentas set nombreYApellido = :nombreYApellido, tipoDeDocumento = :tipoDeDocumento, nroDocumento = :nroDocumento, 
         mail = :mail, tipoDeCuenta = :tipoDeCuenta, moneda = :moneda WHERE nroDeCuenta = :nroDeCuenta AND estado = 'Activo'");
 
 
@@ -70,19 +70,19 @@ class Cuenta
         $consulta->bindValue(':mail', $mail, PDO::PARAM_STR);
         $consulta->bindValue(':tipoDeCuenta', $tipoDeCuenta, PDO::PARAM_STR);
         $consulta->bindValue(':moneda', $moneda, PDO::PARAM_STR);
+        $consulta->bindValue(':nroDeCuenta', $nroDeCuenta, PDO::PARAM_INT);
 
         $consulta->execute();
 
         return $consulta->rowCount(); //retorna la cantidad de filas afectadas
     }
 
-    public function ModificarSaldoCuenta($nroDeCuenta, $tipoDeCuenta, $monto)
+    public static function ModificarSaldoCuenta($nroDeCuenta, $tipoDeCuenta, $monto)
     {
         $objAcessoDatos = AccesoDatos::ObtenerInstancia();
-        $consulta = $objAcessoDatos->PrepararConsulta("UPDATE cuenta set monto = :monto WHERE nroDeCuenta = :nroDeCuenta AND tipoDeCuenta = :tipoDeCuenta AND estado = 'Activo'");
+        $consulta = $objAcessoDatos->PrepararConsulta("UPDATE cuentas set saldoInicial = :monto WHERE nroDeCuenta = :nroDeCuenta AND tipoDeCuenta = :tipoDeCuenta AND estado = 'Activo'");
 
-
-        $consulta->bindValue(':nroDeCuenta', $nroDeCuenta, PDO::PARAM_STR);
+        $consulta->bindValue(':nroDeCuenta', $nroDeCuenta, PDO::PARAM_INT);
         $consulta->bindValue(':tipoDeCuenta', $tipoDeCuenta, PDO::PARAM_STR);
         $consulta->bindValue(':monto', $monto, PDO::PARAM_INT);
 
@@ -94,12 +94,12 @@ class Cuenta
     public static function BorrarCuenta($nroDeCuenta, $tipoDeCuenta, $estado)
     {
         $objAcessoDatos = AccesoDatos::ObtenerInstancia();
-        $consulta = $objAcessoDatos->PrepararConsulta("UPDATE cuenta set estado = :estado WHERE nroDeCuenta = :nroDeCuenta AND tipoDeCuenta = :tipoDeCuenta");
+        $consulta = $objAcessoDatos->PrepararConsulta("UPDATE cuentas set estado = :estado WHERE nroDeCuenta = :nroDeCuenta AND tipoDeCuenta = :tipoDeCuenta");
 
 
-        $consulta->bindValue(':nroDeCuenta', $nroDeCuenta, PDO::PARAM_STR);
+        $consulta->bindValue(':nroDeCuenta', $nroDeCuenta, PDO::PARAM_INT);
         $consulta->bindValue(':tipoDeCuenta', $tipoDeCuenta, PDO::PARAM_STR);
-        $consulta->bindValue(':estado', $estado, PDO::PARAM_INT);
+        $consulta->bindValue(':estado', $estado, PDO::PARAM_STR);
 
         $consulta->execute();
 
@@ -108,18 +108,43 @@ class Cuenta
     public static function ObtenerNroDeCuenta($nroDeDocumento)
     {
         $cuentas = Cuenta::ObtenerTodos();
+        $hayCuenta = false;
         $nroDeCuenta = null;
 
         foreach($cuentas as $cuenta)
         {
-            if($cuenta->nroDocumento = $nroDeDocumento)
+            if($cuenta->nroDocumento == $nroDeDocumento)
             {
                 $nroDeCuenta = $cuenta->nroDeCuenta;
+                $hayCuenta = true;
                 break;
             }
         }
 
+        if($hayCuenta == false)
+        {
+            $nroDeCuenta = Cuenta::ObtenerUltimoNroDeCuenta();
+            if($nroDeCuenta)
+            {
+                $nroDeCuenta = $nroDeCuenta + 1;
+            }
+            else
+            {
+                $nroDeCuenta = 100000;
+            }
+            
+        }
+
         return $nroDeCuenta;
+    }
+
+    public static function ObtenerUltimoNroDeCuenta()
+    {
+        $objAcessoDatos = AccesoDatos::ObtenerInstancia();
+        $consulta = $objAcessoDatos->PrepararConsulta("SELECT nroDeCuenta FROM cuentas ORDER BY nroDeCuenta DESC LIMIT 1");
+        $consulta->execute();
+
+        return $consulta->fetch(PDO::FETCH_COLUMN);
     }
 
     public static function ObtenerSaldoCuenta($nroDeCuenta)
@@ -129,7 +154,7 @@ class Cuenta
 
         foreach($cuentas as $cuenta)
         {
-            if($cuenta->nroDeCuenta = $nroDeCuenta)
+            if($cuenta->nroDeCuenta == $nroDeCuenta)
             {
                 $saldoCuenta = $cuenta->saldoInicial;
                 break;
@@ -142,11 +167,11 @@ class Cuenta
     public static function ObtenerImagen($nroDeCuenta)
     {
         $cuentas = Cuenta::ObtenerTodos();
-        $urlImagen = 0;
+        $urlImagen = "";
 
         foreach($cuentas as $cuenta)
         {
-            if($cuenta->nroDeCuenta = $nroDeCuenta)
+            if($cuenta->nroDeCuenta == $nroDeCuenta)
             {
                 $urlImagen = $cuenta->urlImagen;
                 break;
@@ -154,6 +179,7 @@ class Cuenta
         }
 
         return $urlImagen;
+        
     }
 
     public function GuardarImagenCuenta($ruta, $urlImagen, $nroDeCuenta, $tipoDeCuenta)
@@ -197,7 +223,8 @@ class Cuenta
             {
                 if($value->nroDeCuenta == $nroDeCuenta)
                 {
-                    if($value->tipoDeCuenta == $tipoDeCuenta)
+                    $auxTipoDeCuenta = substr($value->tipoDeCuenta, 0, 2);
+                    if($auxTipoDeCuenta == $tipoDeCuenta)
                     {
                         $retorno = $value;
                         break;
@@ -223,7 +250,7 @@ class Cuenta
             $dato = Cuenta::ExisteCuentaPorNroYTipo($nroDeCuenta, $tipoDeCuenta);
             if(!is_string($dato))
             {
-                $retorno = "La moneda de la cuenta es: " . $dato->_moneda . " y el saldo es: " . $dato->_saldoInicial;
+                $retorno = "La moneda de la cuenta es: " . $dato->moneda . " y el saldo es: " . $dato->saldoInicial;
             }
             else
             {
@@ -233,7 +260,6 @@ class Cuenta
 
         return $retorno;
     }
-
 
 }
 

@@ -4,101 +4,41 @@ include_once("deposito.php");
 include_once("retiro.php");
 class Ajuste
 {
-    public $_nroDeCuenta;
-    public $_motivo;
-    public $_monto;
-    public $_idDeposito;
-    public $_idRetiro;
+    public $idAjuste;
+    public $motivo;
+    public $monto;
+    public $idDeposito;
+    public $idRetiro;
 
-    public function __construct($nroDeCuenta, $motivo, $monto, $idDeposito, $idRetiro)
+    public function __construct()
     {
-        $this->_nroDeCuenta = $nroDeCuenta;
-        $this->_motivo = $motivo;
-        $this->_monto = $monto;
-        $this->_idDeposito = $idDeposito;
-        $this->_idRetiro = $idRetiro;
     }
 
-    static function AjusteCuenta($tipoDeAjuste, $motivo, $idDeposito, $idRetiro)
+    public function CrearAjuste()
     {
-        $retorno = false;
-        $ajustes = Ajuste::leerDatosAjusteJson();
+        $objAcessoDatos = AccesoDatos::ObtenerInstancia();
+        $consulta = $objAcessoDatos->PrepararConsulta("INSERT INTO ajustes (motivo, monto, idDeposito, idRetiro) 
+        VALUES (:motivo, :monto, :idDeposito, :idRetiro)");
 
-        if($tipoDeAjuste == "Extraccion")
-        {
-            if(!Ajuste::VerificarSiElAjusteExiste($tipoDeAjuste, $idRetiro))
-            {
-                $retiros = Retiro::leerDatosRetiroJson();
+        $consulta->bindValue(':motivo', $this->motivo, PDO::PARAM_STR);
+        $consulta->bindValue(':monto', $this->monto, PDO::PARAM_INT);
+        $consulta->bindValue(':idDeposito', $this->idDeposito, PDO::PARAM_INT);
+        $consulta->bindValue(':idRetiro', $this->idRetiro, PDO::PARAM_INT);
+        $consulta->execute();
+    }
 
-                if($retiros != null)
-                {
-                    foreach($retiros as $value)
-                    {
-                        if($value->_idRetiro == $idRetiro)
-                        {              
-                            $cuentaModificada = Cuenta::ModificarSaldoCuenta($value->_monto, $value->_nroDeCuenta, $value->_tipoDeCuenta, $value->_moneda, "+");
-                            $nuevoAjuste = new Ajuste($cuentaModificada->_nroDeCuenta, $motivo, $value->_monto, null, $value->_idRetiro);
-                            $ajustes[] = $nuevoAjuste;
-                            $retorno = true;
-                            break; 
-                        }
-                    }
-                }
-                else
-                {
-                    echo "No hay retiros en la cuenta </br>";
-                }
+    public static function ObtenerTodos()
+    {
+        $objAcessoDatos = AccesoDatos::ObtenerInstancia();
+        $consulta = $objAcessoDatos->PrepararConsulta("SELECT * FROM ajustes");
+        $consulta->execute();
 
-            }
-            else
-            {
-                echo "Este Ajuste ya se hizo </br>";
-            }
-        }
-        else if($tipoDeAjuste == "Deposito")
-        {
-            if(!Ajuste::VerificarSiElAjusteExiste($tipoDeAjuste, $idDeposito))
-            {
-                $depositos = Deposito::leerDatosDepositoJson();
-
-                if($depositos != null)
-                {
-                    foreach($depositos as $value)
-                    {
-                        if($value->_idDeposito == $idDeposito)
-                        {
-                            $cuentaModificada = Cuenta::ModificarSaldoCuenta($value->_monto, $value->_nroDeCuenta, $value->_tipoDeCuenta, $value->_moneda, "-");
-                            $nuevoAjuste = new Ajuste($cuentaModificada->_nroDeCuenta, $motivo, $value->_monto, $value->_idDeposito, null);
-                            $ajustes[] = $nuevoAjuste;
-                            $retorno = true;
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    echo "No hay depositos en la cuenta </br>";
-                }
-            }
-            else
-            {
-                echo "Este Ajuste ya se hizo </br>";
-            }
-        }
-
-        $archivo = fopen("Ajuste.json", "w");
-        $cuentasEnJson = json_encode($ajustes, JSON_PRETTY_PRINT);
-
-        fwrite($archivo, $cuentasEnJson);
-
-        fclose($archivo);
-
-        return $retorno;
+        return $consulta->fetchAll(PDO::FETCH_CLASS, 'Ajuste');
     }
 
     static function VerificarSiElAjusteExiste($tipoDeAjuste, $id)
     {
-        $ajustes = Ajuste::leerDatosAjusteJson();
+        $ajustes = Ajuste::ObtenerTodos();
         $retorno = 0;
 
         if($ajustes != null)
@@ -107,14 +47,14 @@ class Ajuste
             {
                 if($tipoDeAjuste == "Extraccion")
                 {
-                    if($value->_idRetiro == $id)
+                    if($value->idRetiro == $id)
                     {
                         $retorno = true;
                     }
                 }
                 else if($tipoDeAjuste == "Deposito")
                 {
-                    if($value->_idDeposito == $id)
+                    if($value->idDeposito == $id)
                     {
                         $retorno = true;
                     }
@@ -123,30 +63,6 @@ class Ajuste
         }
 
         return $retorno;
-    }
-
-    static function leerDatosAjusteJson()
-    {
-        $ajustes = array();
-
-        if(file_exists("Ajuste.json"))
-        {
-            $aJson = file_get_contents("Ajuste.json");  
-            $arrayDeAjustes = json_decode($aJson, true);
-    
-            foreach($arrayDeAjustes as $value)
-            {              
-                $nuevoAjuste = new Ajuste($value["_nroDeCuenta"], $value["_motivo"], $value["_monto"], $value["_idDeposito"], $value["_idRetiro"]);
-                $ajustes[] = $nuevoAjuste;
-            }
-            
-        }
-        else
-        {
-            file_put_contents("Ajuste.json", "[]");
-        }
-
-        return $ajustes;
     }
 
 }

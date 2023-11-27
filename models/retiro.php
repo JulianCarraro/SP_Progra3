@@ -1,147 +1,95 @@
 <?php
 
 include_once("cuenta.php");
+class Retiro{
+    
+    public $idRetiro;
+    public $nroDeCuenta;
+    public $moneda;
+    public $monto;
+    public $fecha;
 
-class Retiro
-{
-    public $_nombreYApellido;
-    public $_tipoDeDocumento;
-    public $_nroDocumento;
-    public $_mail;
-    public $_tipoDeCuenta;
-    public $_moneda;
-    public $_saldoInicial;
-    public $_nroDeCuenta;
-    public $_urlImagen;
-    public $_monto;
-    public $_fecha;
-    public $_idRetiro;
-
-    public function __construct($nombreYApellido, $tipoDeDocumento, $nroDocumento, $mail, $tipoDeCuenta, $moneda, $saldoInicial, $nroDeCuenta, $urlImagen, $monto, $idRetiro) 
+    public function __construct() 
     {
-        $this->_nombreYApellido = $nombreYApellido;
-        $this->_tipoDeDocumento = $tipoDeDocumento;
-        $this->_nroDocumento = $nroDocumento;
-        $this->_mail = $mail;
-        $this->_tipoDeCuenta = $tipoDeCuenta;
-        $this->_moneda = $moneda;
-        $this->_saldoInicial = $saldoInicial;
-        $this->_nroDeCuenta = $nroDeCuenta;
-        $this->_urlImagen = $urlImagen;
-        $this->_monto = $monto;
-        $this->_idRetiro = $idRetiro;
-        $fechaAux = new DateTime();
-        $this->_fecha = $fechaAux->format("d-m-Y");
     }
 
-    static function RetirarDeCuenta($tipoDeCuenta, $nroDeCuenta, $moneda, $importeARetirar)
+    public function CrearRetiro()
     {
-        $retorno = FALSE;
-        $retiros = Retiro::leerDatosRetiroJson();
-        $cuentas = Cuenta::LeerDatosBancoJson();
-        $cuenta = Cuenta::ExisteCuentaPorNroYTipo($cuentas, $nroDeCuenta, $tipoDeCuenta);
+        $objAcessoDatos = AccesoDatos::ObtenerInstancia();
+        $consulta = $objAcessoDatos->PrepararConsulta("INSERT INTO retiros (nroDeCuenta, moneda, monto, fecha) 
+        VALUES (:nroDeCuenta, :moneda, :monto, :fecha)");
 
-        if(!is_string($cuenta))
-        {
-            $cuentaModificada = Cuenta::ModificarSaldoCuenta($importeARetirar, $nroDeCuenta, $tipoDeCuenta, $moneda, "-");
-
-            if($cuentaModificada != NULL)
-            {
-                $idRetiro = Cuenta::GenerarIdAutoIncremental(100, "idRetiro.txt");
-    
-                $nuevoRetiro = new Retiro($cuentaModificada->_nombreYApellido, $cuentaModificada->_tipoDeDocumento, $cuentaModificada->_nroDocumento, $cuentaModificada->_mail, $cuentaModificada->_tipoDeCuenta, $cuentaModificada->_moneda, ($cuentaModificada->_saldoInicial) + $importeARetirar, $cuentaModificada->_nroDeCuenta, $cuentaModificada->_urlImagen, $importeARetirar, $idRetiro);
-    
-                $retiros[] = $nuevoRetiro;
-                $retiroJson = json_encode($retiros, JSON_PRETTY_PRINT);
-    
-                file_put_contents("Retiro.json", $retiroJson);
-    
-                $retorno = TRUE;
-            }
-        }
-        else
-        {
-            echo $cuenta;
-        }
-
-
-        return $retorno;
+        $consulta->bindValue(':nroDeCuenta', $this->nroDeCuenta, PDO::PARAM_INT);
+        $consulta->bindValue(':monto', $this->monto, PDO::PARAM_INT);
+        $consulta->bindValue(':moneda', $this->moneda, PDO::PARAM_STR);
+        $consulta->bindValue(':fecha', $this->fecha, PDO::PARAM_STR);
+        $consulta->execute();
     }
 
-    static function leerDatosRetiroJson()
+    public static function ObtenerTodos()
     {
-        $retiros = array();
+        $objAcessoDatos = AccesoDatos::ObtenerInstancia();
+        $consulta = $objAcessoDatos->PrepararConsulta("SELECT c.nombreYApellido, c.tipoDeDocumento, c.nroDocumento, c.mail, c.tipoDeCuenta, c.saldoInicial, c.nroDeCuenta, 
+        c.estado, r.idRetiro, r.moneda, r.monto, r.fecha FROM retiros as r LEFT JOIN cuentas as c ON c.nroDeCuenta = r.nroDeCuenta WHERE c.estado = 'Activo'");
+        $consulta->execute();
 
-        if(file_exists("Retiro.json"))
-        {
-            $rJson = file_get_contents("Retiro.json");  
-            $arrayDeRetiros = json_decode($rJson, true);
-    
-            foreach($arrayDeRetiros as $value)
-            {              
-                $nuevoRetiro = new Retiro($value["_nombreYApellido"], $value["_tipoDeDocumento"], $value["_nroDocumento"], $value["_mail"], $value["_tipoDeCuenta"], $value["_moneda"], $value["_saldoInicial"], $value["_nroDeCuenta"], $value["_urlImagen"], $value["_monto"], $value["_idRetiro"]);
-                $retiros[] = $nuevoRetiro;
-            }
-            
-        }
-        else
-        {
-            file_put_contents("Retiro.json", "[]");
-        }
-
-        return $retiros;
+        return $consulta->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    static function TotalDepositado($tipoDeCuenta, $moneda, $fecha = null)
+    public static function ObtenerRetirosDeUsuario($nroDeCuenta)
     {
-        $retiros = Retiro::leerDatosRetiroJson();
+        $objAcessoDatos = AccesoDatos::ObtenerInstancia();
+        $consulta = $objAcessoDatos->PrepararConsulta("SELECT c.nombreYApellido, c.tipoDeDocumento, c.nroDocumento, c.mail, c.tipoDeCuenta, c.saldoInicial, c.nroDeCuenta, 
+        c.estado, r.idRetiro, r.moneda, r.monto, r.fecha FROM retiros as r LEFT JOIN cuentas as c ON c.nroDeCuenta = r.nroDeCuenta WHERE r.nroDeCuenta = :nroDeCuenta AND c.estado = 'Activo'");
+
+        $consulta->bindValue(':nroDeCuenta', $nroDeCuenta, PDO::PARAM_INT);
+
+        $consulta->execute();
+
+        return $consulta->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    static function TotalRetirado($tipoDeCuenta, $moneda, $fecha)
+    {
+        $retiros = Retiro::ObtenerTodos();
         $montoTotal = 0;
-
-        if($fecha == null)
-        {
-            $fecha = new DateTime("");
-            $fecha->sub(new DateInterval('P1D'));
-            $fecha->format('Y-m-d');
-        }
 
         foreach($retiros as $value)
         {
-            if($value->_tipoDeCuenta == $tipoDeCuenta && $value->_moneda == $moneda && $value->_fecha == $fecha)
+            if($value['tipoDeCuenta'] == $tipoDeCuenta . $moneda && $value['moneda'] == $moneda && $value['fecha'] == $fecha)
             {
-                $montoTotal += $value->_monto;
+                $montoTotal += $value['monto'];
             }
         }
 
         return $montoTotal;
     }
 
-    static function BuscarRetirosDeUsuario($nroDeCuenta)
+    static function ObtenerRetirosDeCuenta($nroDeCuenta)
     {
-        $retiros = Retiro::leerDatosRetiroJson();
-        $retirosDelUsuario = NULL;
+        $retiros = Retiro::ObtenerTodos();
+        $retirosDeCuenta = NULL;
 
         foreach($retiros as $value)
         {
-            if($value->_nroDeCuenta == $nroDeCuenta)
+            if($value['nroDeCuenta'] == $nroDeCuenta)
             {
-                $retirosDelUsuario[] = $value;
+                $retirosDeCuenta[] = $value;
             }
         }
-
-        return $retirosDelUsuario;
+        
+        return $retirosDeCuenta;
     }
 
-
-
-    static function BuscarRetirosEntreFechas($fechaInicio, $fechaFinal)
+    static function ObtenerRetirosEntreFechas($fechaInicio, $fechaFinal)
     {
-        $retiros = Retiro::leerDatosRetiroJson();
+        $retiros = Retiro::ObtenerTodos();
         $retirosEntreFechas = NULL;
         $hayRetiro = false;
 
         foreach($retiros as $value)
         {
-            if($value->_fecha >= $fechaInicio && $value->_fecha <= $fechaFinal)
+            if($value['fecha'] >= $fechaInicio && $value['fecha'] <= $fechaFinal)
             {
                 $retirosEntreFechas[] = $value;
                 $hayRetiro = true;
@@ -150,25 +98,48 @@ class Retiro
 
         if($hayRetiro)
         {
-            usort($retirosEntreFechas, "Deposito::CompararNombre");
+            usort($retirosEntreFechas, "Retiro::CompararNombre");
         }
         
         return $retirosEntreFechas;
     }
 
-    static function CompararNombre($depositoUno, $depositoDos)
+    static function CompararNombre($retiroUno, $retiroDos)
     {
-        return strcmp($depositoUno->_nombreYApellido, $depositoDos->_nombreYApellido);
+        return strcmp($retiroUno['nombreYApellido'], $retiroDos['nombreYApellido']);
     }
-
-    static function BuscarRetirosPorMoneda($moneda)
+    
+    static function ObtenerRetirosPorTipoDeCuenta($tipoDeCuenta)
     {
-        $retiros = Retiro::leerDatosRetiroJson();
+        $retiros = Retiro::ObtenerTodos();
+        $retirosPorTipoDeCuenta = NULL;
+
+        foreach($retiros as $value)
+        {
+            if($value['tipoDeCuenta'] == $tipoDeCuenta)
+            {
+                $retirosPorTipoDeCuenta[] = $value;
+            }
+            else
+            {
+                $auxTipoDeCuenta = substr($value['tipoDeCuenta'], 0, 2);
+                if($auxTipoDeCuenta == $tipoDeCuenta)
+                {
+                    $retirosPorTipoDeCuenta[] = $value;
+                }
+            }
+        }
+
+        return $retirosPorTipoDeCuenta;
+    }
+    static function ObtenerRetirosPorMoneda($moneda)
+    {
+        $retiros = Retiro::ObtenerTodos();
         $retirosPorMoneda = NULL;
 
         foreach($retiros as $value)
         {
-            if($value->_moneda == $moneda)
+            if($value['moneda'] == $moneda)
             {
                 $retirosPorMoneda[] = $value;
             }
@@ -177,49 +148,6 @@ class Retiro
         return $retirosPorMoneda;
     }
 
-    static function BuscarRetirosPorTipoDeCuenta($tipoDeCuenta)
-    {
-        $retiros = Retiro::leerDatosRetiroJson();
-        $retirosPorTipoDeCuenta = NULL;
-
-        foreach($retiros as $value)
-        {
-            if($value->_tipoDeCuenta == $tipoDeCuenta)
-            {
-                $retirosPorTipoDeCuenta[] = $value;
-            }
-        }
-
-        return $retirosPorTipoDeCuenta;
-    }
-
-    static function MostrarRetiros($retiros)
-    {
-        if($retiros != NULL)
-        {
-            foreach($retiros as $value)
-            {
-                echo "(Nombre y Apellido): " . $value->_nombreYApellido . " ";
-                echo "(Tipo de Documento): " . $value->_tipoDeDocumento . " ";
-                echo "(Nro de Documento): " . $value->_nroDocumento . " ";
-                echo "(Mail): " . $value->_mail . " ";
-                echo "(Tipo de Cuenta): " . $value->_tipoDeCuenta . " ";
-                echo "(Moneda): " . $value->_moneda . " ";
-                echo "(Saldo Inicial): " . $value->_saldoInicial . " ";
-                echo "(Nro de Cuenta): " . $value->_nroDeCuenta . " ";
-                echo "(URL Imagen): " . $value->_urlImagen . " ";
-                echo "(Monto): " . $value->_monto . " ";
-                echo "(Id Retiro): " . $value->_idRetiro . "</br></br>";
-            }
-        }
-        else
-        {
-            echo "No hay retiros por mostrar </br>";
-        }
-    }
-
 }
-
-
 
 ?>

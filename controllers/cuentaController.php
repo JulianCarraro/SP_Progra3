@@ -37,8 +37,9 @@ class cuentaController extends cuenta
             $nuevaCuenta->mail = $mail;
             $nuevaCuenta->tipoDeCuenta = $tipoDeCuenta . $moneda;
             $nuevaCuenta->moneda = $moneda;
+            $nuevaCuenta->saldoInicial = $saldoInicial;
             $nuevaCuenta->estado = "Activo";
-            $nuevaCuenta->urlImagen = Cuenta::GuardarImagenCuenta("ImagenesDeCuentas/2023/", $_FILES['urlImagen'], $tipoDeCuenta, $nroDeCuenta); 
+            $nuevaCuenta->urlImagen = Cuenta::GuardarImagenCuenta("ImagenesDeCuentas/2023/", $_FILES['urlImagen'], $nroDeCuenta, $tipoDeCuenta . $moneda); 
 
             $nuevaCuenta->CrearCuenta();
 
@@ -48,7 +49,7 @@ class cuentaController extends cuenta
         {
             $saldo = Cuenta::ObtenerSaldoCuenta($nroDeCuenta);
             $saldo = $saldo + $saldoInicial;
-            if(Cuenta::ModificarSaldoCuenta($nroDeCuenta, $tipoDeCuenta, $saldo) > 0)
+            if(Cuenta::ModificarSaldoCuenta($nroDeCuenta, $tipoDeCuenta . $moneda, $saldo) > 0)
             {
                 $payload = json_encode(array("mensaje" => "La cuenta ya existe, se le sumo el nuevo saldo al saldo anterior"));
             }
@@ -75,7 +76,9 @@ class cuentaController extends cuenta
 
     public function TraerUno($request, $response, $args)
     {
-        $nroDeCuenta = $args["nroDeCuenta"];
+        $params = $request->getQueryParams();
+
+        $nroDeCuenta = $params["nroDeCuenta"];
 
         $cuenta = Cuenta::ObtenerCuenta($nroDeCuenta);
         $payload = json_encode($cuenta);
@@ -127,10 +130,10 @@ class cuentaController extends cuenta
 
         $nroDeCuenta = $params['nroDeCuenta'];
         $tipoDeCuenta = $params['tipoDeCuenta'];
+        $urlImagen = Cuenta::ObtenerImagen($nroDeCuenta);
 
         if(Cuenta::BorrarCuenta($nroDeCuenta, $tipoDeCuenta, "Inactivo") > 0)
         {          
-            $urlImagen = Cuenta::ObtenerImagen($nroDeCuenta);
             $nuevoDestino = "ImagenesBackupCuentas/2023/" . $nroDeCuenta . $tipoDeCuenta . ".jpg";
             if(rename($urlImagen, $nuevoDestino))
             {
@@ -143,7 +146,7 @@ class cuentaController extends cuenta
         }
         else
         {
-            $payload = json_encode(array("mensaje" => "Ocurrio un error al hacer la baja"));
+            $payload = json_encode(array("mensaje" => "Ocurrio un error al hacer la baja, verifique el nroDeCuenta y el tipoDeCuenta"));
         }
 
         $response->getBody()->write($payload);
@@ -165,6 +168,46 @@ class cuentaController extends cuenta
         $response->getBody()->write($payload);
 
         return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    public function MovimientoF($request, $response, $args)
+    {
+        $params = $request->getQueryParams();
+
+        $nroDeCuenta = $params['nroDeCuenta'];
+        $tipoDeCuenta = $params['tipoDeCuenta'];
+
+        $dato = Cuenta::ExisteCuentaPorNroYTipo($nroDeCuenta, $tipoDeCuenta);
+
+        if(!is_string($dato))
+        {
+            $listaDeDepositos = Deposito::ObtenerDepositosDeCuenta($nroDeCuenta);
+            if($listaDeDepositos == null)
+            {
+                $listaDeDepositos = "No hay depositos por mostrar";
+            }
+            $listaDeRetiros = Retiro::ObtenerRetirosDeCuenta($nroDeCuenta);
+            if($listaDeRetiros == null)
+            {
+                $listaDeRetiros = "No hay retiros por mostrar";
+            }
+
+            $listas = [
+                'depositos' => $listaDeDepositos,
+                'retiros' => $listaDeRetiros
+            ];
+
+            $payload = json_encode(array("mensaje" => $listas));
+        }
+        else
+        {
+            $payload = json_encode(array("mensaje" => "{$dato}"));
+        }
+
+        $response->getBody()->write($payload);
+
+        return $response->withHeader('Content-Type', 'application/json');
+
     }
 
 

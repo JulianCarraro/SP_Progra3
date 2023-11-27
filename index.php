@@ -10,15 +10,10 @@ use Slim\Routing\RouteCollectorProxy;
 
 require __DIR__ . '/vendor/autoload.php';
 require_once './db/AccesoDatos.php';
-require_once './controllers/UsuarioController.php';
-require_once './controllers/MesaController.php';
-require_once './controllers/PedidoController.php';
-require_once './controllers/ProductoController.php';
-require_once './middlewares/AuthMW.php';
-require_once './middlewares/AuthMozoMW.php';
-require_once './middlewares/AuthSocioMW.php';
-require_once './middlewares/EstadoYTiempoProductoMW.php';
-require_once './utils/AutentificadorJWT.php';
+require_once './controllers/cuentaController.php';
+require_once './controllers/retiroController.php';
+require_once './controllers/depositoController.php';
+require_once './controllers/ajusteController.php';
 
 
 // Instantiate App
@@ -51,57 +46,43 @@ $app->addBodyParsingMiddleware();
 
 
 
-$app->group('/usuarios', function (RouteCollectorProxy $group)
+$app->group('/cuentas', function (RouteCollectorProxy $group)
 {
-    $group->get('[/]', \UsuarioController::class . ':TraerTodos')->add(new AuthSocioMW());
-    $group->get('/CargarUsuarios', \UsuarioController::class . ':CargarUsuariosEnCSV')->add(new AuthSocioMW());
-    $group->get('/DescargarUsuarios', \UsuarioController::class . ':DescargarUsuariosDesdeCSV')->add(new AuthSocioMW());
-    $group->post('[/]', \UsuarioController::class . ':CargarUno')->add(new AuthSocioMW());
-    $group->put('[/]', \UsuarioController::class . ':ModificarUno')->add(new AuthSocioMW());
-    $group->delete('[/{idUsuario}]', \UsuarioController::class . ':BorrarUno')->add(new AuthSocioMW());
-})->add(new AuthMW());
+    $group->get('/MovimientoF', \cuentaController::class . ':MovimientoF');
+    $group->get('/TraerCuenta', \cuentaController::class . ':TraerUno');
+    $group->get('[/]', \cuentaController::class . ':TraerTodos');
+    $group->post('/AltaCuenta', \cuentaController::class . ':CargarUno');
+    $group->post('/ConsultarCuenta', \cuentaController::class . ':ConsultarCuentas');
+    $group->put('[/]', \cuentaController::class . ':ModificarUno');
+    $group->delete('[/]', \cuentaController::class . ':BorrarUno');
+});
 
-$app->group('/mesas', function (RouteCollectorProxy $group)
+$app->group('/depositos', function (RouteCollectorProxy $group)
 {
-    $group->get('[/]', \MesaController::class . ':TraerTodos')->add(new AuthMozoMW());
-    $group->get('/MasUsada', \MesaController::class . ':TraerMesaMasUsada')->add(new AuthSocioMW());
-    $group->get('/MejoresComentarios', \MesaController::class . ':TraerMejoresComentarios')->add(new AuthSocioMW());
-    $group->post('[/]', \MesaController::class . ':CargarUno')->add(new AuthSocioMW());
-    $group->put('[/]', \MesaController::class . ':ModificarUno')->add(new AuthMozoMW());
-    $group->put('/CerrarMesa', \MesaController::class . ':SocioCierraMesa')->add(new AuthSocioMW());
-    $group->delete('[/{idMesa}]', \MesaController::class . ':BorrarUno')->add(new AuthSocioMW());
-})->add(new AuthMW());
+    $group->get('[/]', \depositoController::class . ':TraerTodos');
+    $group->get('/MovimientoA', \depositoController::class . ':MovimientoA');
+    $group->get('/MovimientoB', \depositoController::class . ':MovimientoB');
+    $group->get('/MovimientoC', \depositoController::class . ':MovimientoC');
+    $group->get('/MovimientoD', \depositoController::class . ':MovimientoD');
+    $group->get('/MovimientoE', \depositoController::class . ':MovimientoE');
+    $group->post('[/]', \depositoController::class . ':CargarUno');
+});
 
-$app->group('/productos', function (RouteCollectorProxy $group)
+$app->group('/retiros', function (RouteCollectorProxy $group)
 {
-    $group->get('[/]', \ProductoController::class . ':TraerTodos')->add(new AuthMozoMW());
-    $group->get('/TraerTodosSegunEstado', \ProductoController::class . ':TraerProductosSegunEstado');
-    $group->post('[/]', \ProductoController::class . ':CargarUno')->add(new AuthMozoMW());
-    $group->put('[/]', \ProductoController::class . ':ModificarUno')->add(new AuthMozoMW());
-    $group->put('/EmpleadoTomaProducto', \ProductoController::class . ':EmpleadoTomaProducto')->add(new EstadoYTiempoProductoMW());
-    $group->put('/EmpleadoAlistaProducto', \ProductoController::class . ':EmpleadoAlistaProducto')->add(new EstadoYTiempoProductoMW());
-    $group->delete('[/{idProducto}]', \ProductoController::class . ':BorrarUno')->add(new AuthSocioMW());
-})->add(new AuthMW());
+    $group->get('[/]', \retiroController::class . ':TraerTodos');
+    $group->get('/MovimientoA', \retiroController::class . ':MovimientoA');
+    $group->get('/MovimientoB', \retiroController::class . ':MovimientoB');
+    $group->get('/MovimientoC', \retiroController::class . ':MovimientoC');
+    $group->get('/MovimientoD', \retiroController::class . ':MovimientoD');
+    $group->get('/MovimientoE', \retiroController::class . ':MovimientoE');
+    $group->post('[/]', \retiroController::class . ':CargarUno');
+});
 
-$app->group('/pedidos', function (RouteCollectorProxy $group)
+$app->group('/ajustes', function (RouteCollectorProxy $group)
 {
-    $group->get('[/]', \PedidoController::class . ':TraerTodos');
-    $group->get('/TraerTodosSegunEstado', \PedidoController::class . ':TraerPedidosSegunEstado');
-    $group->post('[/]', \PedidoController::class . ':CargarUno');
-    $group->put('[/]', \PedidoController::class . ':ModificarUno');
-    $group->put('/MozoPedidoCliente', \PedidoController::class . ':MozoPedidoCliente');
-    $group->delete('[/{idPedido}]', \PedidoController::class . ':BorrarUno');
-})->add(new AuthMW())->add(new AuthMozoMW());
-
-$app->group('/cliente', function (RouteCollectorProxy $group)
-{
-    $group->get('[/]', \PedidoController::class . ':TraerPedidoCliente');
-    $group->put('[/]', \PedidoController::class . ':ClienteCalificaPedido');
-})->add(new AuthMW());
-
-$app->group('/login', function (RouteCollectorProxy $group)
-{
-    $group->post('[/]', \UsuarioController::class . ':LoginUsuario');
+    $group->get('[/]', \ajusteController::class . ':TraerTodos');
+    $group->post('[/]', \ajusteController::class . ':CargarUno');
 });
 
 $app->run();

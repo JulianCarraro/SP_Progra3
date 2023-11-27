@@ -20,17 +20,25 @@ Class depositoController extends deposito
         {
             $cuenta = $dato;
 
-            $nuevoDeposito = new Deposito();
-            $nuevoDeposito->nroDeCuenta = $nroDeCuenta;
-            $nuevoDeposito->urlImagen = Deposito::GuardarImagenDeposito('ImagenesDeDepositos2023/', $_FILES['archivo'], $cuenta->tipoDeCuenta, $cuenta->nroDeCuenta);
-            $nuevoDeposito->monto = $monto;
-            $nuevoDeposito->fecha = date('Y-m-d');  
-            $saldoAnterior = Cuenta::ObtenerSaldoCuenta($nroDeCuenta); 
-            Cuenta::ModificarSaldoCuenta($nroDeCuenta, $tipoDeCuenta, $saldoAnterior + $monto);
-
-            $nuevoDeposito->CrearDeposito();
-
-            $payload = json_encode(array("mensaje" => "El deposito se hizo correctamente"));
+            if($cuenta->moneda == $moneda)
+            {
+                $nuevoDeposito = new Deposito();
+                $nuevoDeposito->nroDeCuenta = $nroDeCuenta;
+                $nuevoDeposito->urlImagen = Deposito::GuardarImagenDeposito('ImagenesDeDepositos2023/', $_FILES['foto'], $cuenta->tipoDeCuenta, $cuenta->nroDeCuenta);
+                $nuevoDeposito->moneda = $moneda;
+                $nuevoDeposito->monto = $monto;
+                $nuevoDeposito->fecha = date('Y-m-d');  
+                $saldoAnterior = Cuenta::ObtenerSaldoCuenta($nroDeCuenta); 
+                Cuenta::ModificarSaldoCuenta($nroDeCuenta, $tipoDeCuenta . $moneda, $saldoAnterior + $monto);
+    
+                $nuevoDeposito->CrearDeposito();
+    
+                $payload = json_encode(array("mensaje" => "El deposito se hizo correctamente"));
+            }
+            else
+            {
+                $payload = json_encode(array("mensaje" => "La cuenta no utiliza esa moneda"));
+            }
         }
         else
         {
@@ -43,6 +51,23 @@ Class depositoController extends deposito
 
     }
 
+    public function TraerTodos($request, $response, $args)
+    {
+        $lista = Deposito::ObtenerTodos();
+        if(!empty($lista))
+        {
+            $payload = json_encode(array("ListaDeDepositos" => $lista));
+        }
+        else
+        {
+            $payload = json_encode(array("mensaje" => "No hay depositos por mostrar")); 
+        }        
+
+        $response->getBody()->write($payload);
+
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
     public function MovimientoA($request, $response, $args)
     {
         $params = $request->getQueryParams();
@@ -50,7 +75,6 @@ Class depositoController extends deposito
         $tipoDeCuenta = $params["tipoDeCuenta"];
         $moneda = $params["moneda"];
         $montoTotal = 0;
-        $depositos = Deposito::ObtenerTodos();
         if(isset($params["fecha"]))
         {
             $fecha = $params["fecha"];
@@ -81,7 +105,7 @@ Class depositoController extends deposito
 
         if($depositos != NULL)
         {
-            $payload = json_encode(array("mensaje" => "{$depositos}"));
+            $payload = json_encode(array("mensaje" => $depositos));
         }
         else
         {
@@ -104,7 +128,7 @@ Class depositoController extends deposito
 
         if($depositos != NULL)
         {
-            $payload = json_encode(array("mensaje" => "{$depositos}"));
+            $payload = json_encode(array("mensaje" => $depositos));
         }
         else
         {
@@ -127,7 +151,7 @@ Class depositoController extends deposito
 
         if($depositos != NULL)
         {
-            $payload = json_encode(array("mensaje" => "{$depositos}"));
+            $payload = json_encode(array("mensaje" => $depositos));
         }
         else
         {
@@ -149,7 +173,7 @@ Class depositoController extends deposito
 
         if($depositos != NULL)
         {
-            $payload = json_encode(array("mensaje" => "{$depositos}"));
+            $payload = json_encode(array("mensaje" => $depositos));
         }
         else
         {
