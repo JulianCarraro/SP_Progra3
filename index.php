@@ -88,6 +88,7 @@ $app->group('/ajustes', function (RouteCollectorProxy $group)
 $app->group('/cuentas', function (RouteCollectorProxy $group)
 {
     $group->post('[/]', \cuentaController::class . ':CargarUno');
+    $group->post('/login', \cuentaController::class . ':LoginUsuario');
 });
 
 $app->run();

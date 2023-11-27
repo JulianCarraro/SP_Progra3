@@ -17,6 +17,12 @@ class AuthCajeroMW
         if($data->rol == "Cajero")
         {
             $response = $handler->handle($request);
+            $nuevoLog = new LogUsuario();
+            $nuevoLog->fechaYHora = date('Y-m-d H:i:s');
+            $nuevoLog->idUsuario = $data->idUsuario;
+            $nuevoLog->mail = $data->mail;
+            $nuevoLog->tipoDeOperacion = "Movimiento Cajero";
+            $nuevoLog->CrearLog();
         }
         else
         {
