@@ -55,34 +55,39 @@ $app->group('/cuentas', function (RouteCollectorProxy $group)
     $group->post('/ConsultarCuenta', \cuentaController::class . ':ConsultarCuentas');
     $group->put('[/]', \cuentaController::class . ':ModificarUno');
     $group->delete('[/]', \cuentaController::class . ':BorrarUno');
-});
+})->add(new AuthMW());
 
 $app->group('/depositos', function (RouteCollectorProxy $group)
 {
-    $group->get('[/]', \depositoController::class . ':TraerTodos');
-    $group->get('/MovimientoA', \depositoController::class . ':MovimientoA');
-    $group->get('/MovimientoB', \depositoController::class . ':MovimientoB');
-    $group->get('/MovimientoC', \depositoController::class . ':MovimientoC');
-    $group->get('/MovimientoD', \depositoController::class . ':MovimientoD');
-    $group->get('/MovimientoE', \depositoController::class . ':MovimientoE');
-    $group->post('[/]', \depositoController::class . ':CargarUno');
-});
+    $group->get('[/]', \depositoController::class . ':TraerTodos')->add(new AuthCajeroMW());
+    $group->get('/MovimientoA', \depositoController::class . ':MovimientoA')->add(new AuthSupervisorMW());
+    $group->get('/MovimientoB', \depositoController::class . ':MovimientoB')->add(new AuthSupervisorMW());
+    $group->get('/MovimientoC', \depositoController::class . ':MovimientoC')->add(new AuthSupervisorMW());
+    $group->get('/MovimientoD', \depositoController::class . ':MovimientoD')->add(new AuthSupervisorMW());
+    $group->get('/MovimientoE', \depositoController::class . ':MovimientoE')->add(new AuthSupervisorMW());
+    $group->post('[/]', \depositoController::class . ':CargarUno')->add(new AuthCajeroMW());
+})->add(new AuthMW())->add(new AuthCajeroMW());
 
 $app->group('/retiros', function (RouteCollectorProxy $group)
 {
-    $group->get('[/]', \retiroController::class . ':TraerTodos');
-    $group->get('/MovimientoA', \retiroController::class . ':MovimientoA');
-    $group->get('/MovimientoB', \retiroController::class . ':MovimientoB');
-    $group->get('/MovimientoC', \retiroController::class . ':MovimientoC');
-    $group->get('/MovimientoD', \retiroController::class . ':MovimientoD');
-    $group->get('/MovimientoE', \retiroController::class . ':MovimientoE');
-    $group->post('[/]', \retiroController::class . ':CargarUno');
-});
+    $group->get('[/]', \retiroController::class . ':TraerTodos')->add(new AuthCajeroMW());
+    $group->get('/MovimientoA', \retiroController::class . ':MovimientoA')->add(new AuthSupervisorMW());
+    $group->get('/MovimientoB', \retiroController::class . ':MovimientoB')->add(new AuthSupervisorMW());
+    $group->get('/MovimientoC', \retiroController::class . ':MovimientoC')->add(new AuthSupervisorMW());
+    $group->get('/MovimientoD', \retiroController::class . ':MovimientoD')->add(new AuthSupervisorMW());
+    $group->get('/MovimientoE', \retiroController::class . ':MovimientoE')->add(new AuthSupervisorMW());
+    $group->post('[/]', \retiroController::class . ':CargarUno')->add(new AuthCajeroMW());
+})->add(new AuthMW());
 
 $app->group('/ajustes', function (RouteCollectorProxy $group)
 {
     $group->get('[/]', \ajusteController::class . ':TraerTodos');
     $group->post('[/]', \ajusteController::class . ':CargarUno');
+})->add(new AuthMW())->add(new AuthSupervisorMW());
+
+$app->group('/cuentas', function (RouteCollectorProxy $group)
+{
+    $group->post('[/]', \cuentaController::class . ':CargarUno');
 });
 
 $app->run();
